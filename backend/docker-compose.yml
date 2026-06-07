@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  compute-node:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      HUB_URL: ${HUB_URL:-http://host.docker.internal:8000}
+      NODE_NAME: ${NODE_NAME:-node-default}
+      OWNER_ID: ${OWNER_ID:-default}
+      GPU_TIER: ${GPU_TIER:-cpu}
+      REGION: ${REGION:-in}
+      POLL_INTERVAL: ${POLL_INTERVAL:-10}
+      AUTH_TOKEN: ${AUTH_TOKEN:-}
+    network_mode: host
