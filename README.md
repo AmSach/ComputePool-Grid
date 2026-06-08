@@ -33,6 +33,8 @@ graph TD
 - [x] **Dynamic Node Discovery**: Real-time hardware capability sensing (NVIDIA SMI, GPUtil integration).
 - [x] **Redundant Hub API**: High-availability FastAPI backend with PostgreSQL/Neon persistence.
 - [x] **Secure Job Execution**: Sandboxed execution of ML training and generic compute scripts.
+- [x] **Interactive Command Center**: Real-time dashboard with job deployment and live audit logs.
+- [x] **Multi-Node Fleet**: Scaling to 10+ nodes with priority-aware matchmaking.
 - [ ] **Global TFLOPS Map**: Real-time visualization of geographic compute density.
 - [ ] **P2P File Mesh**: IPFS-backed result CID storage and retrieval.
 

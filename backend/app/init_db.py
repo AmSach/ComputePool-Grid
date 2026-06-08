@@ -14,9 +14,9 @@ def init():
     db = SessionLocal()
     try:
         # Create god account
-        god = db.query(User).filter(User.user_id == "god").first()
+        god = db.query(User).filter(User.id == "god").first()
         if not god:
-            god = User(user_id="god", name="Aman Sachan", tier=UserTier.GOD, region="in", balance=99999)
+            god = User(id="god", name="Aman Sachan", tier=UserTier.GOD, region="in", balance=99999)
             db.add(god)
             print("God user created!")
         else:
@@ -25,9 +25,9 @@ def init():
             print("God user updated!")
         
         # Create demo user
-        demo = db.query(User).filter(User.user_id == "demo").first()
+        demo = db.query(User).filter(User.id == "demo").first()
         if not demo:
-            demo = User(user_id="demo", name="Demo User", tier=UserTier.STANDARD, region="in", balance=100)
+            demo = User(id="demo", name="Demo User", tier=UserTier.STANDARD, region="in", balance=100)
             db.add(demo)
             print("Demo user created!")
         

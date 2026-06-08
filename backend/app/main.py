@@ -8,6 +8,31 @@ import uuid, hashlib, os
 
 from app.database import get_db
 from app.models import Base, User, Node, Job, Transaction, AuditLog, NodeStatus, JobStatus, UserTier
+from pydantic import BaseModel
+
+class NodeRegister(BaseModel):
+    node_name: str
+    gpu_tier: str
+    owner_id: str
+    cpu_cores: int = 4
+    ram_gb: float = 8.0
+    region: str = "in"
+
+class Heartbeat(BaseModel):
+    node_id: str
+    status: Optional[str] = "online"
+
+class JobSubmit(BaseModel):
+    type: str
+    submitter_id: str
+    script: str = ""
+    slices: int = 1
+    priority: int = 0
+
+class JobComplete(BaseModel):
+    job_id: str
+    result_cid: Optional[str] = None
+    error: Optional[str] = None
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
@@ -77,27 +102,25 @@ def get_user(user_id: str, db: Session = Depends(get_db)):
 
 # ── NODES ────────────────────────────────────────────────
 @app.post("/nodes/register")
-def register_node(node_name: str, gpu_tier: str, owner_id: str,
-                  cpu_cores: int = 4, ram_gb: int = 8, region: str = "in",
-                  db: Session = Depends(get_db)):
+def register_node(data: NodeRegister, db: Session = Depends(get_db)):
     node_id = uuid.uuid4().hex[:12]
-    quality = qs(gpu_tier)
-    node = Node(id=node_id, name=node_name, gpu_tier=gpu_tier, owner_id=owner_id,
-                cpu_cores=cpu_cores, ram_gb=ram_gb, quality_score=quality,
-                status=NodeStatus.ONLINE, region=region)
+    quality = qs(data.gpu_tier)
+    node = Node(id=node_id, name=data.node_name, gpu_tier=data.gpu_tier, owner_id=data.owner_id,
+                cpu_cores=data.cpu_cores, ram_gb=data.ram_gb, quality_score=quality,
+                status=NodeStatus.ONLINE, region=data.region)
     db.add(node)
-    audit(db, "node_registered", {"node_id": node_id, "owner_id": owner_id})
+    audit(db, "node_registered", {"node_id": node_id, "owner_id": data.owner_id})
     db.commit()
     return {"node_id": node_id, "quality_score": quality}
 
 @app.post("/nodes/heartbeat")
-def heartbeat(node_id: str, status: str = None, db: Session = Depends(get_db)):
-    node = db.query(Node).filter(Node.id == node_id).first()
+def heartbeat(data: Heartbeat, db: Session = Depends(get_db)):
+    node = db.query(Node).filter(Node.id == data.node_id).first()
     if not node:
         raise HTTPException(status_code=404, detail="Node not found")
     node.last_heartbeat = datetime.utcnow()
-    if status:
-        node.status = NodeStatus(status.upper())
+    if data.status:
+        node.status = NodeStatus(data.status.upper())
     db.commit()
     return {"ok": True}
 
@@ -121,29 +144,27 @@ def get_node(node_id: str, db: Session = Depends(get_db)):
 
 # ── JOBS ────────────────────────────────────────────────
 @app.post("/jobs/submit")
-def submit_job(type: str, submitter_id: str, script: str = None,
-                slices: int = 1, priority: int = 0,
-                db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == submitter_id).first()
+def submit_job(data: JobSubmit, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == data.submitter_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    gpu_cost = {"ml": 2.5, "gaming": 3.0, "compute": 1.0}.get(type.lower(), 1.0)
-    cost = slices * gpu_cost * gr(user.region)
+    gpu_cost = {"ml": 2.5, "gaming": 3.0, "compute": 1.0}.get(data.type.lower(), 1.0)
+    cost = data.slices * gpu_cost * gr(user.region)
     final_cost = 0.0 if user.tier == UserTier.GOD else cost
     if user.tier != UserTier.GOD and user.balance < final_cost:
         raise HTTPException(status_code=400, detail=f"Insufficient credits. Need {final_cost}, have {user.balance}")
     job_id = uuid.uuid4().hex[:12]
-    job = Job(id=job_id, type=type, status=JobStatus.PENDING, submitter_id=submitter_id,
-              script=script, slices=slices, credits_cost=final_cost, priority=priority)
+    job = Job(id=job_id, type=data.type, status=JobStatus.PENDING, submitter_id=data.submitter_id,
+              script=data.script, slices=data.slices, credits_cost=final_cost, priority=data.priority)
     db.add(job)
     if user.tier != UserTier.GOD:
         user.balance -= final_cost
         user.spent_total += final_cost
-        tx = Transaction(id=uuid.uuid4().hex[:12], user_id=submitter_id, type="spend",
+        tx = Transaction(id=uuid.uuid4().hex[:12], user_id=data.submitter_id, type="spend",
                          amount=-final_cost, balance_after=user.balance,
                          description=f"Job {job_id} submitted")
         db.add(tx)
-    audit(db, "job_submitted", {"job_id": job_id, "type": type, "submitter_id": submitter_id})
+    audit(db, "job_submitted", {"job_id": job_id, "type": data.type, "submitter_id": data.submitter_id})
     db.commit()
     return {"job_id": job_id, "status": "PENDING", "estimated_cost": final_cost}
 
@@ -177,20 +198,20 @@ def next_job(node_id: str, db: Session = Depends(get_db)):
     return {"job": {"id": job.id, "type": job.type, "script": job.script, "slices": job.slices}}
 
 @app.post("/jobs/complete")
-def complete_job(job_id: str, result_cid: str = None, error: str = None, db: Session = Depends(get_db)):
-    job = db.query(Job).filter(Job.id == job_id).first()
+def complete_job(data: JobComplete, db: Session = Depends(get_db)):
+    job = db.query(Job).filter(Job.id == data.job_id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    job.status = JobStatus.FAILED if error else JobStatus.COMPLETED
-    job.result_cid = result_cid
-    job.error = error
+    job.status = JobStatus.FAILED if data.error else JobStatus.COMPLETED
+    job.result_cid = data.result_cid
+    job.error = data.error
     job.completed_at = datetime.utcnow()
     if job.assigned_node_id:
         node = db.query(Node).filter(Node.id == job.assigned_node_id).first()
         if node:
             node.status = NodeStatus.ONLINE
             # Pay node owner
-            if job.credits_cost > 0 and not error:
+            if job.credits_cost > 0 and not data.error:
                 earn_mult = qs(node.gpu_tier) * gr(node.region)
                 earned = job.credits_cost * earn_mult * (1 - PLATFORM_FEE)
                 owner = db.query(User).filter(User.id == node.owner_id).first()
@@ -199,9 +220,9 @@ def complete_job(job_id: str, result_cid: str = None, error: str = None, db: Ses
                     owner.earned_total += earned
                     tx = Transaction(id=uuid.uuid4().hex[:12], user_id=node.owner_id, type="earn",
                                      amount=earned, balance_after=owner.balance,
-                                     job_id=job_id, description=f"Job {job_id} completed")
+                                     job_id=data.job_id, description=f"Job {data.job_id} completed")
                     db.add(tx)
-    audit(db, "job_completed", {"job_id": job_id, "error": error})
+    audit(db, "job_completed", {"job_id": data.job_id, "error": data.error})
     db.commit()
     return {"ok": True}
 
@@ -212,7 +233,9 @@ def get_job(job_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Job not found")
     return {"job": {"id": job.id, "type": job.type, "status": job.status.value,
                     "submitter_id": job.submitter_id, "assigned_node_id": job.assigned_node_id,
-                    "credits_cost": job.credits_cost}}
+                    "credits_cost": job.credits_cost, "result_cid": job.result_cid,
+                    "error": job.error, "created_at": job.created_at,
+                    "completed_at": job.completed_at}}
 
 # ── CREDITS ─────────────────────────────────────────────
 @app.post("/credits/topup")

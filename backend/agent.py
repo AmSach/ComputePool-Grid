@@ -80,15 +80,15 @@ def get_disk_gb():
 def get_system_info():
     gpu_name, vram_gb = get_gpu_info()
     return {
-        "nodeName": NODE_NAME,
-        "ownerId": OWNER_ID,
-        "gpuTier": gpu_name,
-        "cpuCores": get_cpu_cores(),
-        "ramGb": get_ram_gb(),
+        "node_name": NODE_NAME,
+        "owner_id": OWNER_ID,
+        "gpu_tier": gpu_name,
+        "cpu_cores": get_cpu_cores(),
+        "ram_gb": get_ram_gb(),
         "region": REGION,
-        "diskFreeGb": get_disk_gb(),
+        "disk_free_gb": get_disk_gb(),
         "os": platform.system(),
-        "vramGb": vram_gb
+        "vram_gb": vram_gb
     }
 
 def register_node():
@@ -98,8 +98,8 @@ def register_node():
     resp = requests.post(f"{HUB_URL}/nodes/register", json=info, headers=headers, timeout=15)
     resp.raise_for_status()
     data = resp.json()
-    NODE_ID = data["nodeId"]
-    print(f"[Node] Registered as {NODE_ID} | GPU: {info['gpuTier']} | Quality: {data['qualityScore']}x")
+    NODE_ID = data["node_id"]
+    print(f"[Node] Registered as {NODE_ID} | GPU: {info['gpu_tier']} | Quality: {data['quality_score']}x")
     return NODE_ID
 
 def send_heartbeat(status="online"):
@@ -108,7 +108,7 @@ def send_heartbeat(status="online"):
         headers = {"Authorization": f"Bearer {AUTH_TOKEN}"} if AUTH_TOKEN else {}
         requests.post(
             f"{HUB_URL}/nodes/heartbeat",
-            json={"nodeId": NODE_ID, "status": status},
+            json={"node_id": NODE_ID, "status": status},
             headers=headers, timeout=10
         )
     except Exception as e:
@@ -155,8 +155,8 @@ def execute_job(job):
     try:
         headers = {"Authorization": f"Bearer {AUTH_TOKEN}"} if AUTH_TOKEN else {}
         requests.post(
-            f"{HUB_URL}/jobs/{job_id}/complete",
-            json={"resultCid": result_cid, "error": error},
+            f"{HUB_URL}/jobs/complete",
+            json={"job_id": job_id, "result_cid": result_cid, "error": error},
             headers=headers, timeout=15
         )
         print(f"[Job] {job_id} completed. CID: {result_cid or 'none'}")
