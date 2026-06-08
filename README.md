@@ -1,59 +1,52 @@
-# ⚡ ComputePool: The Sovereign Compute Protocol
+# 💎 ComputePool: The Decentralized GPU/CPU Grid
 
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Network Status](https://img.shields.io/badge/Network-Online-brightgreen)](https://man44.zo.space/compute-pool)
-[![Stardust Tier](https://img.shields.io/badge/Tier-World's%20Best-gold)](https://stardance.hackclub.com)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Stack: Next.js + FastAPI + PostgreSQL](https://img.shields.io/badge/Stack-Full--Stack-green)](https://github.com/AmSach/ComputePool-Grid)
+[![Network Status](https://img.shields.io/badge/Nodes-Online-brightgreen)](https://man44.zo.space/compute-pool)
 
-**ComputePool is a decentralized orchestration layer that aggregates global GPU/CPU capacity into a unified, programmable marketplace.**
+**ComputePool is a high-performance orchestration layer for the decentralized compute marketplace.**
 
-Unlike centralized providers (AWS/GCP), ComputePool allows any individual or organization to monetize their hardware by joining a sovereign swarm. It provides the infrastructure for AI agents, research labs, and gaming studios to rent high-performance compute at a fraction of traditional costs.
+It allows individuals to lease their spare GPU and CPU capacity to a global pool, providing developers with affordable, high-performance compute on-demand. Unlike centralized clouds, ComputePool is resilient, trustless, and dynamically priced.
 
-## 🌟 Key Pillars
+## 🚀 Key Features
 
-- **Zero-Trust Orchestration**: Hardware nodes are verified via cryptographic heartbeats and quality-of-service (QoS) staking.
-- **Agent-First Architecture**: Designed natively for autonomous swarms (like Omega-System) to dynamically spin up worker nodes.
-- **Cross-Platform Agent**: A lightweight Python binary that instantly turns any machine (Linux, macOS, Windows) into a revenue-generating node.
-- **Tokenized Economy**: Automated payouts in Stardust/Credits based on TFLOPS-hours contributed.
+### ⚖️ Weighted Orchestration
+The heart of ComputePool is its **Weighted Scoring Algorithm** (`backend/app/core/orchestrator.py`). It intelligently matches compute tasks with nodes based on VRAM capacity, CPU core count, and historical reliability scores.
 
-## 🏗 System Architecture
+### 💰 Spot Pricing Marketplace
+Our dynamic marketplace allows node providers to list their compute with real-time bidding. Users can deploy jobs to the "best-priced" node that meets their hardware affinity requirements.
 
-```mermaid
-graph TD
-    A[Consumer/Agent] -->|Submit Job| B[ComputePool Hub]
-    B -->|Matchmaking| C{Protocol Scheduler}
-    C -->|Assign| D[Node Swarm A]
-    C -->|Assign| E[Node Swarm B]
-    D & E <--> F[(Distributed Ledger)]
-    F <--> G[Stardust Rewards]
-    G --> H[Hardware Owners]
-```
+### 📊 Live Mesh Visualization
+The [Interactive Dashboard](https://man44.zo.space/compute-pool) provides a real-time view of the network topology, showing active nodes, job throughput, and resource utilization across the global mesh.
 
-## 🛠 Feature Stack
+## 🏗 Full-Stack Architecture
 
-- [x] **Dynamic Node Discovery**: Real-time hardware capability sensing (NVIDIA SMI, GPUtil integration).
-- [x] **Redundant Hub API**: High-availability FastAPI backend with PostgreSQL/Neon persistence.
-- [x] **Secure Job Execution**: Sandboxed execution of ML training and generic compute scripts.
-- [x] **Interactive Command Center**: Real-time dashboard with job deployment and live audit logs.
-- [x] **Multi-Node Fleet**: Scaling to 10+ nodes with priority-aware matchmaking.
-- [ ] **Global TFLOPS Map**: Real-time visualization of geographic compute density.
-- [ ] **P2P File Mesh**: IPFS-backed result CID storage and retrieval.
+- **Frontend**: Next.js (TypeScript) + Tailwind CSS + Lucide Icons.
+- **Backend**: FastAPI (Python) + SQLAlchemy + PostgreSQL (Neon).
+- **Orchestration**: Custom asynchronous scheduler for job-to-node mapping.
+- **Node Agent**: Lightweight Python daemon for resource reporting and job execution.
 
-## 📦 Rapid Deployment (1-Click)
+## 🛠 Developer Quickstart
 
 ```bash
-# Clone the repository
-git clone https://github.com/AmSach/compute-pool.git
-cd compute-pool
+# Clone the marketplace
+git clone https://github.com/AmSach/ComputePool-Grid.git
+cd ComputePool-Grid
 
-# Join the network as a worker node
-export HUB_URL="http://127.0.0.1:8081"
-export NODE_NAME="my-power-node"
-python3 backend/agent.py
+# Setup backend
+cd backend
+pip install -r requirements.txt
+python3 -m app.main
+
+# Setup frontend
+cd ../frontend
+npm install
+npm run dev
 ```
 
-## 📊 Live Dashboard
-Monitor network health, active nodes, and job throughput in real-time:
-[**https://man44.zo.space/compute-pool**](https://man44.zo.space/compute-pool)
+## 🎥 Demo Video
+Check out the live recording of the ComputePool Command Center in action:
+`file 'stardance_assets/computepool_demo_v2.webm'`
 
 ---
-*Developed for the Hack Club Stardance Challenge. Building the future of distributed intelligence.*
+*Built for the Stardance Challenge. Decentralizing the future of compute.*
